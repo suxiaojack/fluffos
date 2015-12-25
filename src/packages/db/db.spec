@@ -5,3 +5,4 @@ mixed db_exec(int, string);
 mixed *db_fetch(int, int);
 int db_rollback(int);
 string db_status(void);
+int db_affected(int);

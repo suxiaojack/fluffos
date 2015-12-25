@@ -101,7 +101,7 @@ static void MySQL_cleanup(dbconn_t *);
 static char *MySQL_errormsg(dbconn_t *);
 
 static db_defn_t mysql = {"MySQL", MySQL_connect, MySQL_close,   MySQL_execute, MySQL_fetch,
-                          NULL,    NULL,          MySQL_cleanup, NULL,          MySQL_errormsg};
+                          NULL,    NULL,          MySQL_cleanup, NULL,          MySQL_errormsg,MySQL_affected};
 #endif
 
 #ifdef USE_POSTGRES
@@ -202,6 +202,27 @@ void f_db_close(void) {
 
   /* Remove the entry from the linked list */
   free_db_conn(db);
+
+  sp->u.number = ret;
+}
+#endif
+
+#ifdef F_DB_AFFECTED
+void f_db_affected ()
+{
+  int ret = 0;
+  db_t *db;
+
+  valid_database("affected", &the_null_array);
+
+  db = find_db_conn(sp->u.number);
+  if (!db) {
+    error("Attempt to query affected an invalid database handle\n");
+  }
+
+  if (db->type->affected) {
+    ret = db->type->affected(&(db->c));
+  }
 
   sp->u.number = ret;
 }
@@ -632,6 +653,11 @@ static int MySQL_close(dbconn_t *c) {
   c->mysql.handle = 0;
 
   return 1;
+}
+
+static int MySQL_affected (dbconn_t * c)
+{
+  return mysql_affected_rows(c->mysql.handle);
 }
 
 static int MySQL_execute(dbconn_t *c, const char *s) {

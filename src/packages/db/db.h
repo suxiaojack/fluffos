@@ -56,6 +56,7 @@ struct db_defn_t {
   void (*cleanup)(dbconn_t *);
   void (*status)(dbconn_t *, outbuffer_t *);
   char *(*error)(dbconn_t *);
+  int (*affected)(dbconn_t *);
 };
 
 #define DB_FLAG_EMPTY 0x1
