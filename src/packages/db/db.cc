@@ -656,7 +656,7 @@ static int MySQL_close(dbconn_t *c) {
   return 1;
 }
 
-static int MySQL_affected (dbconn_t * c)
+static int MySQL_affected(dbconn_t * c)
 {
   return mysql_affected_rows(c->mysql.handle);
 }
