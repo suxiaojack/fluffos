@@ -59,9 +59,10 @@
 #define PACKAGE_SOCKETS
 #define PACKAGE_PARSER
 #define PACKAGE_EXTERNAL
-#undef PACKAGE_DB
+#define PACKAGE_DB
 #ifdef PACKAGE_DB
 #define USE_MYSQL 1
+#define MYSQL_SOCKET_ADDRESS    "/var/lib/mysql/mysql.sock"
 #undef USE_POSTGRES
 #undef USE_SQLITE3
 #endif
@@ -80,5 +81,12 @@
 #define SAVE_GZ_EXTENSION ".o.gz"
 #undef PACKAGE_THREAD
 
+#define PACKAGE_ANSI
+#define PACKAGE_ARITH_OPERATOR
+#define PACKAGE_CHINESE
+#define PACKAGE_DATABASE
+#undef PACKAGE_MAPPINGBASE
+#define PACKAGE_LONELY
+#undef PACKAGE_MG
 
 #endif /* _LOCAL_OPTIONS_H_ */
