@@ -99,6 +99,7 @@ static int MySQL_execute(dbconn_t *, const char *);
 static array_t *MySQL_fetch(dbconn_t *, int);
 static void MySQL_cleanup(dbconn_t *);
 static char *MySQL_errormsg(dbconn_t *);
+static int MySQL_affected(dbconn_t *);
 
 static db_defn_t mysql = {"MySQL", MySQL_connect, MySQL_close,   MySQL_execute, MySQL_fetch,
                           NULL,    NULL,          MySQL_cleanup, NULL,          MySQL_errormsg,MySQL_affected};
