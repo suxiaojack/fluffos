@@ -334,7 +334,7 @@ void f_angle(void) {
 //  Add by Clode@RW
 #ifdef F_PYTHAGOREAN_THM
 void
-f_pythagorean_thm PROT((void))
+f_pythagorean_thm(void)
 {
     (sp - 1)->u.real = sqrt(sp->u.real*sp->u.real + (sp - 1)->u.real*(sp - 1)->u.real);
     sp--;
