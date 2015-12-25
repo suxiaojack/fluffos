@@ -330,3 +330,13 @@ void f_angle(void) {
   push_real(acos(dot / (norma * normb)));
 }
 #endif
+
+//  Add by Clode@RW
+#ifdef F_PYTHAGOREAN_THM
+void
+f_pythagorean_thm PROT((void))
+{
+    (sp - 1)->u.real = sqrt(sp->u.real*sp->u.real + (sp - 1)->u.real*(sp - 1)->u.real);
+    sp--;
+}
+#endif

@@ -17,3 +17,4 @@
     float dotprod(int *|float *, int *|float *);
     float distance(int *|float *, int *|float *);
     float angle(int *|float *, int *|float *);
+    float pythagorean_thm(float, float);
