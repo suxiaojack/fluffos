@@ -65,6 +65,11 @@ struct translation *get_translator(const char *encoding) {
 }
 
 char *translate(iconv_t tr, const char *mes, int inlen, int *outlen) {
+  if (!tr) {
+    *outlen = inlen;
+    return (char *)mes;
+  }
+
   size_t len = inlen;
   size_t len2;
   unsigned char *tmp = (unsigned char *)mes;
@@ -118,6 +123,9 @@ char *translate(iconv_t tr, const char *mes, int inlen, int *outlen) {
 #endif
 
 char *translate_easy(iconv_t tr, const char *mes) {
+  if (!tr)
+    return mes;
+
   int dummy;
   char *res = translate(tr, mes, strlen(mes) + 1, &dummy);
   return res;
@@ -125,10 +133,19 @@ char *translate_easy(iconv_t tr, const char *mes) {
 
 #ifdef F_SET_ENCODING
 void f_set_encoding() {
-  if (current_object->interactive) {
+  object_t *ob;
+  if (st_num_arg == 2)
+  {
+    ob = sp->u.ob;
+    pop_stack();
+  }
+  else
+    ob = current_object;
+
+  if (ob->interactive) {
     struct translation *newt = get_translator(const_cast<char *>(sp->u.string));
     if (newt) {
-      current_object->interactive->trans = newt;
+      ob->interactive->trans = newt;
       return;
     }
   }
