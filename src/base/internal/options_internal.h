@@ -54,7 +54,7 @@
  *
  * A side effect is that 'array' cannot be a variable or function name.
  */
-#undef ARRAY_RESERVED_WORD
+#define ARRAY_RESERVED_WORD
 
 /* REF_RESERVED_WORD: If this is defined then the word 'ref' can be
  *   used to pass arguments to functions by value.  Example:
@@ -120,7 +120,7 @@
  * this option, since it needs 4 bytes to store the function pointers
  * anyway, and this setting is ignored.
  */
-#undef USE_32BIT_ADDRESSES
+#define USE_32BIT_ADDRESSES
 
 /* LARGEST_PRINTABLE_STRING: defines the size of the vsprintf() buffer in
  *   comm.c's add_message(). Instead of blindly making this value larger,
@@ -137,6 +137,6 @@
  *   resolution is 1/60 of a second, then any time less than approxmately 15k
  *   microseconds will resolve to zero (0).
  */
-#undef PROFILE_FUNCTIONS
+#define PROFILE_FUNCTIONS
 
 #endif /* _BASE_INTERNAL_OPTIONS_INTERNAL_H */
