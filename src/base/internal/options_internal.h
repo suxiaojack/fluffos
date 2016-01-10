@@ -120,7 +120,7 @@
  * this option, since it needs 4 bytes to store the function pointers
  * anyway, and this setting is ignored.
  */
-#define USE_32BIT_ADDRESSES
+#undef USE_32BIT_ADDRESSES
 
 /* LARGEST_PRINTABLE_STRING: defines the size of the vsprintf() buffer in
  *   comm.c's add_message(). Instead of blindly making this value larger,
