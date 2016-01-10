@@ -22,7 +22,7 @@ static svalue_t *insert_in_mapping (mapping_t * m, char * key) {
 void f_set () {
     int i, j;
     object_t *ob;
-    svalue_t *data, *value = NULL;
+    svalue_t *dbase, *value = NULL;
     mapping_t *map;
     unsigned short type;
     char *src, *dst;
@@ -36,22 +36,22 @@ void f_set () {
     else
     	ob = current_object;
 
-    i = find_global_variable(ob->prog, "dbase", &type, 0);
+    i = find_global_variable(ob->prog, "database", &type, 0);
     if (i == -1)
     {
        	pop_2_elems();
         error("(set) %s 物件未宣告全域映射资料库变数。\n", ob->obname);
     }
 
-    data = &ob->variables[i];
+    dbase = &ob->variables[i];
 
-    if( data->type != T_MAPPING )
+    if( dbase->type != T_MAPPING )
     {
     	pop_2_elems();
     	error("(set) %s 物件的资料库变数型态错误。\n", ob->obname);
     }
 
-    map = data->u.map;
+    map = dbase->u.map;
     src = (char *)(sp-1)->u.string;
     dst = tmpstr = (char *)DMALLOC(SVALUE_STRLEN(sp-1) + 1, TAG_STRING, "set");
     j=0;
@@ -111,7 +111,7 @@ void f_set () {
 void f_set_temp () {
     int i, j;
     object_t *ob;
-    svalue_t *data, *value = NULL;
+    svalue_t *dbase, *value = NULL;
     mapping_t *map;
     unsigned short type;
     char *src, *dst;
@@ -125,22 +125,22 @@ void f_set_temp () {
     else
     	ob = current_object;
 
-    i = find_global_variable(ob->prog, "tmp_dbase", &type, 0);
+    i = find_global_variable(ob->prog, "temp_database", &type, 0);
     if (i == -1)
     {
         pop_2_elems();
         error("(set_temp) %s 物件未宣告全域映射资料库变数。\n", ob->obname);
     }
 
-    data = &ob->variables[i];
+    dbase = &ob->variables[i];
 
-    if( data->type != T_MAPPING )
+    if( dbase->type != T_MAPPING )
     {
     	pop_2_elems();
     	error("(set_temp) %s 物件的资料库变数型态错误。\n", ob->obname);
     }
 
-    map = data->u.map;
+    map = dbase->u.map;
     src = (char *)(sp-1)->u.string;
     dst = tmpstr = (char *)DMALLOC(SVALUE_STRLEN(sp-1) + 1, TAG_STRING, "set_temp");
     j=0;
@@ -200,7 +200,6 @@ void f_set_temp () {
 // 记忆体节省机制 shadow_ob 检查
 // 只要有 shadow_ob 就只查 shadow_ob, shadow_ob 就算查不到也不会再查本体, 而是传回 0
 //
-/*
 #ifdef F_QUERY
 void f_query () {
     int idx;
@@ -219,7 +218,7 @@ void f_query () {
     else
         ob = current_object;
 
-    idx = find_global_variable(ob->prog, "dbase", &type, 0);
+    idx = find_global_variable(ob->prog, "database", &type, 0);
     if (idx == -1)
     {
         free_string_svalue(sp--);
@@ -230,24 +229,24 @@ void f_query () {
 
     if( value->type != T_MAPPING )
     {
-        free_string_svalue(sp--);
-        error("(query) %s 物件的资料库变数型态错误。\n", ob->obname);
+    	free_string_svalue(sp--);
+    	error("(query) %s 物件的资料库变数型态错误。\n", ob->obname);
     }
 
     shadow = find_string_in_mapping(value->u.map, "shadow_ob");
 
-    if( shadow != &const0u && shadow->type == T_OBJECT && ob != shadow->u.ob )
+    if( shadow != &const0u && shadow->type == T_OBJECT && ob != shadow->u.ob)
     {
-        idx = find_global_variable(shadow->u.ob->prog, "dbase", &type, 0);
-        if (idx != -1)
-        {
-            value = &shadow->u.ob->variables[idx];
+    	idx = find_global_variable(shadow->u.ob->prog, "database", &type, 0);
+    	if (idx != -1)
+    	{
+        	value = &shadow->u.ob->variables[idx];
 
-            if( value->type != T_MAPPING )
-                value = &ob->variables[idx];
-            else
-                ob = shadow->u.ob;
-        }
+        	if( value->type != T_MAPPING )
+    			value = &ob->variables[idx];
+    		else
+    			ob = shadow->u.ob;
+    	}
     }
 
     map = value->u.map;
@@ -256,160 +255,27 @@ void f_query () {
 
     while (*src)
     {
-        while (*src != '/' && *src)
-            *dst++ = *src++;
-        if (*src == '/')
-        {
-            while (*++src == '/');
-            if( dst == tmpstr ) continue;
-        }
-        *dst = '\0';
-        value = find_string_in_mapping(map, tmpstr);
+	while (*src != '/' && *src)
+	    *dst++ = *src++;
+	if (*src == '/')
+	{
+	    while (*++src == '/');
+	    if( dst == tmpstr ) continue;
+	}
+	*dst = '\0';
+	value = find_string_in_mapping(map, tmpstr);
 
-        if( value == &const0u ) break;
-        if( value->type != T_MAPPING )
-        {
-            if(*src) value = &const0u;
-            break;
-        }
-        map = value->u.map;
-        dst = tmpstr;
+	if( value == &const0u ) break;
+	if( value->type != T_MAPPING )
+	{
+	    if(*src) value = &const0u;
+	    break;
+	}
+	map = value->u.map;
+	dst = tmpstr;
     }
 
     FREE(tmpstr);
-    free_string_svalue(sp--);
-    push_svalue(value);
-}
-#endif
-*/
-
-//
-// query()
-//
-// 多层次 mapping 结构搜寻
-// 记忆体节省机制 shadow_ob 检查
-// 先搜查本体,没有找到则搜查shadow_ob
-//
-
-#ifdef F_QUERY
-void f_query () {
-    int idx;
-    object_t *ob;
-    unsigned short type;
-    svalue_t *value;
-    char *src, *dst;
-    mapping_t *map;
-    char *tmpstr;
-
-    if( st_num_arg==2 )
-    {
-        ob=sp->u.ob;
-        pop_stack();
-    }
-    else
-        ob = current_object;
-
-    idx = find_global_variable(ob->prog, "dbase", &type, 0);
-    if (idx == -1)
-    {
-        free_string_svalue(sp--);
-        push_undefined();
-        return;
-    }
-    value = &ob->variables[idx];
-
-    if( value->type != T_MAPPING )
-    {
-        free_string_svalue(sp--);
-        error("(query) %s 物件的资料库变数型态错误。\n", ob->obname);
-    }
-
-    map = value->u.map;
-    src = (char *)sp->u.string;
-    dst = tmpstr = (char *)DMALLOC(SVALUE_STRLEN(sp) + 1, TAG_STRING, "query");
-
-    while (*src)
-    {
-        while (*src != '/' && *src)
-            *dst++ = *src++;
-        if (*src == '/')
-        {
-            while (*++src == '/');
-            if( dst == tmpstr ) continue;
-        }
-        *dst = '\0';
-        value = find_string_in_mapping(map, tmpstr);
-
-        if( value == &const0u ) break;
-        if( value->type != T_MAPPING )
-        {
-            if(*src) value = &const0u;
-            break;
-        }
-        map = value->u.map;
-        dst = tmpstr;
-    }
-
-    FREE(tmpstr);
-
-    if( value == &const0u )
-    {
-        svalue_t *shadow;
-
-        value = &ob->variables[idx];
-
-        shadow = find_string_in_mapping(value->u.map, "shadow_ob");
-
-        if( shadow != &const0u && shadow->type == T_OBJECT && ob != shadow->u.ob)
-        {
-            idx = find_global_variable(shadow->u.ob->prog, "dbase", &type, 0);
-
-            if (idx != -1)
-            {
-                value = &shadow->u.ob->variables[idx];
-
-                if( value->type == T_MAPPING )
-                {
-                    ob = shadow->u.ob;
-
-                    map = value->u.map;
-                    src = (char *)sp->u.string;
-                    dst = tmpstr = (char *)DMALLOC(SVALUE_STRLEN(sp) + 1, TAG_STRING, "query");
-
-                    while (*src)
-                    {
-                        while (*src != '/' && *src)
-                            *dst++ = *src++;
-                        if (*src == '/')
-                        {
-                            while (*++src == '/');
-                            if( dst == tmpstr ) continue;
-                        }
-                        *dst = '\0';
-                        value = find_string_in_mapping(map, tmpstr);
-
-                        if( value == &const0u ) break;
-                        if( value->type != T_MAPPING )
-                        {
-                            if(*src) value = &const0u;
-                            break;
-                        }
-                        map = value->u.map;
-                        dst = tmpstr;
-                    }
-
-                    FREE(tmpstr);
-                }
-                else
-                    value = &const0u;
-            }
-            else
-                value = &const0u;
-        }
-        else
-            value = &const0u;
-    }
-
     free_string_svalue(sp--);
     push_svalue(value);
 }
@@ -436,7 +302,7 @@ void f_query_temp () {
     } else
         ob = current_object;
 
-    idx = find_global_variable(ob->prog, "tmp_dbase", &type, 0);
+    idx = find_global_variable(ob->prog, "temp_database", &type, 0);
     if (idx == -1)
     {
         free_string_svalue(sp--);
@@ -504,7 +370,7 @@ void f_addn () {
     else
         ob = current_object;
 
-    i = find_global_variable(ob->prog, "dbase", &type, 0);
+    i = find_global_variable(ob->prog, "database", &type, 0);
     if (i == -1)
     {
         pop_2_elems();
@@ -598,7 +464,7 @@ void f_addn_temp () {
     else
         ob = current_object;
 
-    i = find_global_variable(ob->prog, "tmp_dbase", &type, 0);
+    i = find_global_variable(ob->prog, "temp_database", &type, 0);
     if (i == -1)
     {
         pop_2_elems();
@@ -691,7 +557,7 @@ void f_delete () {
     else
     	ob = current_object;
 
-    i = find_global_variable(ob->prog, "dbase", &type, 0);
+    i = find_global_variable(ob->prog, "database", &type, 0);
     if (i == -1)
     {
         free_string_svalue(sp--);
@@ -759,7 +625,7 @@ void f_delete_temp () {
     svalue_t *value, lv;
     mapping_t *map;
     unsigned short type;
-    char *src, *dst;
+   char *src, *dst;
 
     if( st_num_arg == 2 )
     {
@@ -769,7 +635,7 @@ void f_delete_temp () {
     else
     	ob = current_object;
 
-    i = find_global_variable(ob->prog, "tmp_dbase", &type, 0);
+    i = find_global_variable(ob->prog, "temp_database", &type, 0);
     if (i == -1)
     {
         free_string_svalue(sp--);
