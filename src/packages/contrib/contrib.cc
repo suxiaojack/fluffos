@@ -182,7 +182,10 @@ void f_fetch_variable(void) {
   idx = find_global_variable(ob->prog, name, &type, 0);
 
   if (idx == -1 || (type & DECL_PRIVATE)) {
-    error("No variable named '%s'!\n", name);
+      //error("No variable named '%s'!\n", name);
+      pop_n_elems(st_num_arg);
+      push_undefined();
+      return;
   }
   pop_n_elems(st_num_arg);
   push_svalue(&ob->variables[idx]);
