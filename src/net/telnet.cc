@@ -293,7 +293,7 @@ static inline void on_telnet_subnegotiation(unsigned char cmd, const char *buf, 
       char *str = new_string(size, "telnet suboption");
       str[size] = '\0';
       for (int i = 0; i < size; i++) {
-        str[i] = (buf[i] ? buf[1] : 'I');
+        str[i] = (buf[i] ? buf[i] : 'I');
       }
       push_malloced_string(str);
       safe_apply(APPLY_TELNET_SUBOPTION, ip->ob, 1, ORIGIN_DRIVER);
@@ -409,7 +409,7 @@ void telnet_event_handler(telnet_t *telnet, telnet_event_t *ev, void *user_data)
 //
 // NOTE: Some options need to be sent DO first, and some
 // needs WILL, don't change or you will risk breaking clients.
-void send_initial_telent_negotiantions(struct interactive_t *user) {
+void send_initial_telnet_negotiations(struct interactive_t *user) {
   // Default request linemode, save bytes/cpu.
   set_linemode(user, false);
 
