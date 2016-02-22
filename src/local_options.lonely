@@ -41,7 +41,7 @@
 #undef RECEIVE_ED
 #define RESTRICTED_ED
 #undef NO_SHADOWS
-#define USE_ICONV GB18030
+#define USE_ICONV "GB18030"
 #undef IPV6
 #undef DTRACE
 
