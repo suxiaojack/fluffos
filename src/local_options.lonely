@@ -62,9 +62,10 @@
 #define PACKAGE_DB
 #ifdef PACKAGE_DB
 #define USE_MYSQL 1
-#define MYSQL_SOCKET_ADDRESS    "/var/lib/mysql/mysql.sock"
+#undef USE_MSQL
 #undef USE_POSTGRES
 #undef USE_SQLITE3
+#define DEFAULT_DB  USE_MYSQL
 #endif
 #define PACKAGE_ASYNC
 #define PACKAGE_SHA1
