@@ -42,8 +42,8 @@ struct translation *get_translator(const char *encoding) {
   strcat(name, "//TRANSLIT//IGNORE");
 #endif
   ret->name = name;
-  ret->incoming = iconv_open("UTF-8", encoding);
-  ret->outgoing = iconv_open(name, "UTF-8");
+  ret->incoming = iconv_open(USE_ICONV, encoding);
+  ret->outgoing = iconv_open(name, USE_ICONV);
 
   ret->next = 0;
   if (ret->incoming == (iconv_t)-1 || ret->outgoing == (iconv_t)-1) {
@@ -154,31 +154,37 @@ void f_set_encoding() {
 }
 #endif
 
-#ifdef F_TO_UTF8
-void f_to_utf8() {
-  struct translation *newt = get_translator(const_cast<char *>(sp->u.string));
+#ifdef F_TO_DEFAULT_ENCODING
+void f_to_default_encoding(){
+  struct translation *newt = get_translator((char *)sp->u.string);
   pop_stack();
-  if (!newt) {
+  if(!newt)
     error("unknown encoding");
-  }
-  char *text = const_cast<char *>(sp->u.string);
+  char *text = (char *)sp->u.string;
   char *translated = translate_easy(newt->incoming, text);
   pop_stack();
-  copy_and_push_string(translated);
+  
+  if( !translated )
+    push_number(0);
+  else
+    copy_and_push_string(translated);
 }
 #endif
 
-#ifdef F_UTF8_TO
-void f_utf8_to() {
-  struct translation *newt = get_translator(const_cast<char *>(sp->u.string));
+#ifdef F_DEFAULT_ENCODING_TO
+void f_default_encoding_to(){
+  struct translation *newt = get_translator((char *)sp->u.string);
   pop_stack();
-  if (!newt) {
+  if(!newt)
     error("unknown encoding");
-  }
-  char *text = const_cast<char *>(sp->u.string);
+  char *text = (char *)sp->u.string;
   char *translated = translate_easy(newt->outgoing, text);
   pop_stack();
-  copy_and_push_string(translated);
+
+  if( !translated )
+    push_number(0);
+  else
+    copy_and_push_string(translated);
 }
 #endif
 
