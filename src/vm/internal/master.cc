@@ -95,8 +95,6 @@ static void get_master_applies(object_t *ob) {
 void set_master(object_t *ob) {
 #if defined(PACKAGE_UIDS) || defined(PACKAGE_MUDLIB_STATS)
   int first_load = (!master_ob);
-#endif
-#ifdef PACKAGE_UIDS
   svalue_t *ret;
 #endif
 
