@@ -156,13 +156,14 @@ void f_set_encoding() {
 
 #ifdef F_TO_DEFAULT_ENCODING
 void f_to_default_encoding(){
-  struct translation *newt = get_translator((char *)sp->u.string);
-  pop_stack();
-  if(!newt)
-    error("unknown encoding");
-  char *text = (char *)sp->u.string;
-  char *translated = translate_easy(newt->incoming, text);
-  pop_stack();
+    struct translation *newt = get_translator(const_cast<char *>(sp->u.string));
+    pop_stack();
+    if (!newt) {
+      error("unknown encoding");
+    }
+    char *text = const_cast<char *>(sp->u.string);
+    char *translated = translate_easy(newt->incoming, text);
+    pop_stack();
   
   if( !translated )
     push_number(0);
@@ -173,13 +174,14 @@ void f_to_default_encoding(){
 
 #ifdef F_DEFAULT_ENCODING_TO
 void f_default_encoding_to(){
-  struct translation *newt = get_translator((char *)sp->u.string);
-  pop_stack();
-  if(!newt)
-    error("unknown encoding");
-  char *text = (char *)sp->u.string;
-  char *translated = translate_easy(newt->outgoing, text);
-  pop_stack();
+    struct translation *newt = get_translator(const_cast<char *>(sp->u.string));
+    pop_stack();
+    if (!newt) {
+      error("unknown encoding");
+    }
+    char *text = const_cast<char *>(sp->u.string);
+    char *translated = translate_easy(newt->outgoing, text);
+    pop_stack();
 
   if( !translated )
     push_number(0);

@@ -194,7 +194,7 @@ void new_user_handler(evconnlistener *listener, evutil_socket_t fd, struct socka
   user->last_time = get_current_time();
 
 #ifdef USE_ICONV
-  user->trans = get_translator("USE_ICONV");
+  user->trans = get_translator(USE_ICONV);
 #else
   user->trans = (struct translation *)master_ob;
 // never actually used, but avoids multiple ifdefs later on!
