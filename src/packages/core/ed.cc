@@ -3312,183 +3312,148 @@ char *object_ed_cmd(object_t *ob, const char *str) {
 #endif
 
 #ifdef F_ED
-void f_ed(void) {
-  if (!command_giver || !command_giver->interactive) {
-    pop_n_elems(st_num_arg);
-    return;
-  }
-
-  if (!st_num_arg) {
-    /* ed() */
-    ed_start(0, 0, 0, 0, 0, 0);
-  } else if (st_num_arg == 1) {
-    /* ed(fname) */
-    if (!(sp->type == T_STRING)) {
-      bad_argument(sp, T_STRING, 1, F_ED);
-    }
-    ed_start(sp->u.string, 0, 0, 0, 0, 0);
-    pop_stack();
-  } else if (st_num_arg == 2) {
-    /* ed(fname,exitfn) / ed(fname, scroll_lines) */
-    if (!((sp - 1)->type == T_STRING)) {
-      bad_argument(sp - 1, T_STRING, 1, F_ED);
+void
+f_ed (void)
+{
+    if (!command_giver || !command_giver->interactive) {
+        pop_n_elems(st_num_arg);
+        return;
     }
 
-    if (sp->type == T_STRING) {
-      ed_start((sp - 1)->u.string, 0, sp->u.string, 0, current_object, 0);
-    } else if (sp->type == T_NUMBER) {
-      ed_start((sp - 1)->u.string, 0, 0, 0, 0, sp->u.number);
-    } else {
-      bad_argument(sp, T_NUMBER | T_STRING, 2, F_ED);
-    }
-    pop_2_elems();
-  } else if (st_num_arg == 3) {
-    /* ed(fname,exitfn,restricted) / ed(fname,writefn,exitfn) /
-     ed(fname,exitfn,scroll_lines) */
-    if (!((sp - 1)->type == T_STRING)) {
-      bad_argument(sp - 1, T_STRING, 2, F_ED);
-    }
-    if (!((sp - 2)->type == T_STRING)) {
-      bad_argument(sp - 2, T_STRING, 1, F_ED);
-    }
+    if (!st_num_arg) {
+        /* ed() */
+        ed_start(0, 0, 0, 0, 0, 0);
+    } else if (st_num_arg == 1) {
+        /* ed(fname) */
+        ed_start(sp->u.string, 0, 0, 0, 0, 0);
+        pop_stack();
+    } else if (st_num_arg == 2) {
+        /* ed(fname,exitfn) / ed(fname, scroll_lines) */
+        if(sp->type == T_STRING)
+          ed_start((sp - 1)->u.string, 0, sp->u.string, 0, current_object, 0);
+        else if(sp->type == T_NUMBER)
+          ed_start((sp - 1)->u.string, 0, 0, 0, 0, sp->u.number);
+        else
+          bad_argument(sp, T_NUMBER | T_STRING, 2, F_ED);
+        pop_2_elems();
+    } else if (st_num_arg == 3) {
+        /* ed(fname,exitfn,restricted) / ed(fname,writefn,exitfn) /
+           ed(fname,exitfn,scroll_lines) */
+        if (sp->type == T_NUMBER) {
+            if(sp->u.number == 1)
+              ed_start((sp - 2)->u.string, 0, (sp - 1)->u.string, sp->u.number,
+                       current_object, 0);
+            else
+              ed_start((sp - 2)->u.string, 0, (sp - 1)->u.string, 0,
+                       current_object, sp->u.number);
+        } else if (sp->type == T_STRING) {
+            ed_start((sp - 2)->u.string, (sp - 1)->u.string, sp->u.string, 0,
+                     current_object, 0);
+        } else {
+            bad_argument(sp, T_NUMBER | T_STRING, 3, F_ED);
+        }
+        pop_3_elems();
+    } else if (st_num_arg == 4) {
+        /* ed(fname,writefn,exitfn,restricted) /
+           ed(fname,writefn,exitfn,scroll_lines) */
+        if (!((sp - 1)->type == T_STRING))
+            bad_argument(sp - 1, T_STRING, 3, F_ED);
+        if (!(sp->type == T_NUMBER))
+            bad_argument(sp, T_NUMBER, 4, F_ED);
+        if(sp->u.number == 1)
+          ed_start((sp - 3)->u.string, (sp - 2)->u.string, (sp - 1)->u.string,
+                   sp->u.number, current_object, 0);
+        else
+          ed_start((sp - 3)->u.string, (sp - 2)->u.string, (sp - 1)->u.string,
+                   0, current_object, sp->u.number);
+        pop_n_elems(4);
+    } else { /* st_num_arg == 5 */
+        /* ed(fname, writefn, exitfn, restricted, scroll_lines) */
+        if(!(sp->type == T_NUMBER))
+          bad_argument(sp, T_NUMBER, 5, F_ED);
+        if(!((sp-1)->type == T_NUMBER))
+          bad_argument(sp-1, T_NUMBER, 4, F_ED);
+        if(!((sp-2)->type == T_STRING))
+          bad_argument(sp-2, T_STRING, 3, F_ED);
 
-    if (sp->type == T_NUMBER) {
-      if (sp->u.number == 1) {
-        ed_start((sp - 2)->u.string, 0, (sp - 1)->u.string, sp->u.number, current_object, 0);
-      } else {
-        ed_start((sp - 2)->u.string, 0, (sp - 1)->u.string, 0, current_object, sp->u.number);
-      }
-    } else if (sp->type == T_STRING) {
-      ed_start((sp - 2)->u.string, (sp - 1)->u.string, sp->u.string, 0, current_object, 0);
-    } else {
-      bad_argument(sp, T_NUMBER | T_STRING, 3, F_ED);
-    }
-    pop_3_elems();
-  } else if (st_num_arg == 4) {
-    /* ed(fname,writefn,exitfn,restricted) /
-     ed(fname,writefn,exitfn,scroll_lines) */
-    if (!(sp->type == T_NUMBER)) {
-      bad_argument(sp, T_NUMBER, 4, F_ED);
-    }
-    if (!((sp - 1)->type == T_STRING)) {
-      bad_argument(sp - 1, T_STRING, 3, F_ED);
-    }
-    if (!((sp - 2)->type == T_STRING)) {
-      bad_argument(sp - 2, T_STRING, 2, F_ED);
-    }
-    if (!((sp - 3)->type == T_STRING)) {
-      bad_argument(sp - 3, T_STRING, 1, F_ED);
-    }
+        ed_start((sp - 4)->u.string, (sp - 3)->u.string, (sp - 2)->u.string,
+                 (sp - 1)->u.number, current_object, sp->u.number);
 
-    if (sp->u.number == 1) {
-      ed_start((sp - 3)->u.string, (sp - 2)->u.string, (sp - 1)->u.string, sp->u.number,
-               current_object, 0);
-    } else {
-      ed_start((sp - 3)->u.string, (sp - 2)->u.string, (sp - 1)->u.string, 0, current_object,
-               sp->u.number);
+        pop_n_elems(5);
     }
-    pop_n_elems(4);
-  } else { /* st_num_arg == 5 */
-    /* ed(fname, writefn, exitfn, restricted, scroll_lines) */
-    if (!(sp->type == T_NUMBER)) {
-      bad_argument(sp, T_NUMBER, 5, F_ED);
-    }
-    if (!((sp - 1)->type == T_NUMBER)) {
-      bad_argument(sp - 1, T_NUMBER, 4, F_ED);
-    }
-    if (!((sp - 2)->type == T_STRING)) {
-      bad_argument(sp - 2, T_STRING, 3, F_ED);
-    }
-    if (!((sp - 3)->type == T_STRING)) {
-      bad_argument(sp - 3, T_STRING, 2, F_ED);
-    }
-    if (!((sp - 4)->type == T_STRING)) {
-      bad_argument(sp - 4, T_STRING, 1, F_ED);
-    }
-
-    ed_start((sp - 4)->u.string, (sp - 3)->u.string, (sp - 2)->u.string, (sp - 1)->u.number,
-             current_object, sp->u.number);
-
-    pop_n_elems(5);
-  }
 }
 #endif
 
 #ifdef F_ED_CMD
-void f_ed_cmd(void) {
-  char *res;
+void f_ed_cmd (void)
+{
+    char *res;
+    
+    if (current_object->flags & O_DESTRUCTED)
+        error("destructed objects can't use ed.\n");
 
-  if (current_object->flags & O_DESTRUCTED) {
-    error("destructed objects can't use ed.\n");
-  }
+    if (!(current_object->flags & O_IN_EDIT))
+        error("ed_cmd() called with no ed session active.\n");
 
-  if (!(current_object->flags & O_IN_EDIT)) {
-    error("ed_cmd() called with no ed session active.\n");
-  }
+    res = object_ed_cmd(current_object, sp->u.string);
 
-  res = object_ed_cmd(current_object, sp->u.string);
-
-  free_string_svalue(sp);
-  if (res) {
-    sp->subtype = STRING_MALLOC;
-    sp->u.string = res;
-  } else {
-    sp->subtype = STRING_CONSTANT;
-    sp->u.string = "";
-  }
+    free_string_svalue(sp);
+    if (res) {
+        sp->subtype = STRING_MALLOC;
+        sp->u.string = res;
+    } else {
+        sp->subtype = STRING_CONSTANT;
+        sp->u.string = "";
+    }
 }
 #endif
 
 #ifdef F_ED_START
-void f_ed_start(void) {
-  char *res;
-  const char *fname;
-  int restr = 0;
-  int scroll_lines = 20;
+void f_ed_start (void)
+{
+    char *res;
+    const char *fname;
+    int restr = 0;
+    int scroll_lines = 20;
 
-  if (st_num_arg == 3) {
-    scroll_lines = (sp--)->u.number;
-    restr = (sp--)->u.number;
-  }
-
-  if (st_num_arg == 2) {
-    if (sp->u.number == 1) {
-      restr = (sp--)->u.number;
-    } else {
+    if (st_num_arg == 3) {
       scroll_lines = (sp--)->u.number;
+      restr = (sp--)->u.number;
     }
-  }
 
-  if (st_num_arg) {
-    fname = sp->u.string;
-  } else {
-    fname = 0;
-  }
+    if (st_num_arg == 2) {
+        if(sp->u.number == 1)
+          restr = (sp--)->u.number;
+        else
+          scroll_lines = (sp--)->u.number;
+    }
 
-  if (current_object->flags & O_DESTRUCTED) {
-    error("destructed objects can't use ed.\n");
-  }
+    if (st_num_arg)
+        fname = sp->u.string;
+    else
+        fname = 0;
 
-  if (current_object->flags & O_IN_EDIT) {
-    error("ed_start() called while an ed session is already started.\n");
-  }
+    if (current_object->flags & O_DESTRUCTED)
+        error("destructed objects can't use ed.\n");
 
-  res = object_ed_start(current_object, fname, restr, scroll_lines);
+    if (current_object->flags & O_IN_EDIT)
+        error("ed_start() called while an ed session is already started.\n");
 
-  if (fname) {
-    free_string_svalue(sp);
-  } else {
-    STACK_INC;
-    sp->type = T_STRING;
-  }
+    res = object_ed_start(current_object, fname, restr, scroll_lines);
 
-  if (res) {
-    sp->subtype = STRING_MALLOC;
-    sp->u.string = res;
-  } else {
-    sp->subtype = STRING_CONSTANT;
-    sp->u.string = "";
-  }
+    if (fname) free_string_svalue(sp);
+    else {
+        STACK_INC;
+        sp->type = T_STRING;
+    }
+
+    if (res) {
+        sp->subtype = STRING_MALLOC;
+        sp->u.string = res;
+    } else {
+        sp->subtype = STRING_CONSTANT;
+        sp->u.string = "";
+    }
 }
 #endif
 
