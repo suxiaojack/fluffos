@@ -95,7 +95,7 @@
  * config file.
  */
 /* MAX_LOCAL: maximum number of local variables allowed per LPC function */
-#define CFG_MAX_LOCAL_VARIABLES 50
+#define CFG_MAX_LOCAL_VARIABLES 100
 
 /* CFG_MAX_GLOBAL_VARIABLES: This value determines the maximum number of
  *   global variables per object.  The maximum value is 65536.  There is
