@@ -501,7 +501,7 @@ static int restore_interior_string(char **val, svalue_t *sv) {
 
 static int parse_numeric(char **cpp, unsigned char c, svalue_t *dest) {
   char *cp = *cpp;
-  LPC_INT res, neg;
+  LPC_FLOAT res, neg;
 
   if (c == '-') {
     neg = 1;
@@ -1750,6 +1750,7 @@ int restore_object(object_t *ob, const char *file, int noclear) {
     restore_object_from_buff(ob, buf.data(), noclear);
   } catch (const char *) {
     restore_context(&econ);
+    pop_context(&econ);
     return 0;
   }
   pop_context(&econ);

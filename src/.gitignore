@@ -1,5 +1,6 @@
 *.o
 *.d
+*.a
 *.gcda
 *.gcno
 *.gcov
@@ -10,6 +11,7 @@
 /config.status
 /config.log
 /configure.h
+/configure
 driver
 driver.old
 portbind

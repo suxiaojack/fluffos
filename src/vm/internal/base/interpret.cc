@@ -48,17 +48,6 @@ extern inline const char *origin_to_name(int /*origin*/);
 int stack_in_use_as_temporary = 0;
 #endif
 
-/*
- * Macro for extracting global variable indices.
- */
-
-#if CFG_MAX_GLOBAL_VARIABLES <= 256
-#define READ_GLOBAL_INDEX READ_UCHAR
-#elif CFG_MAX_GLOBAL_VARIABLES <= 65536
-#define READ_GLOBAL_INDEX READ_USHORT
-#else
-#error CFG_MAX_GLOBAL_VARIABLES must not be greater than 65536
-#endif
 
 int inter_sscanf(svalue_t * /*arg*/, svalue_t * /*s0*/, svalue_t * /*s1*/, int /*num_arg*/);
 program_t *current_prog;
@@ -2196,11 +2185,7 @@ void eval_instruction(char *p) {
         }
 
         STACK_INC;
-        *sp = *s;
-
-        /* The optimizer has asserted this won't be used again.  Make
-         * it look like a number to avoid double frees. */
-        s->type = T_NUMBER;
+        assign_svalue_no_free(sp, s);
         break;
       }
       case F_LOCAL: {
@@ -2506,7 +2491,9 @@ void eval_instruction(char *p) {
           STACK_INC;
           sp->type = T_LVALUE;
           if (flags & FOREACH_LEFT_GLOBAL) {
-            sp->u.lvalue = find_value((READ_GLOBAL_INDEX(pc) + variable_index_offset));
+            unsigned short idx = 0;
+            LOAD2(idx, pc);
+            sp->u.lvalue = find_value(idx + variable_index_offset);
           } else {
             sp->u.lvalue = fp + EXTRACT_UCHAR(pc++);
           }
@@ -2525,9 +2512,12 @@ void eval_instruction(char *p) {
         }
 
         if (flags & FOREACH_RIGHT_GLOBAL) {
+          short idx = 0;
+          LOAD2(idx, pc);
+
           STACK_INC;
           sp->type = T_LVALUE;
-          sp->u.lvalue = find_value((READ_GLOBAL_INDEX(pc) + variable_index_offset));
+          sp->u.lvalue = find_value(idx + variable_index_offset);
         } else if (flags & FOREACH_REF) {
           ref_t *ref = make_ref();
           svalue_t *loc = fp + EXTRACT_UCHAR(pc++);
@@ -2973,7 +2963,9 @@ void eval_instruction(char *p) {
       case F_GLOBAL: {
         svalue_t *s;
 
-        s = find_value((READ_GLOBAL_INDEX(pc) + variable_index_offset));
+        unsigned short idx = 0;
+        LOAD2(idx, pc);
+        s = find_value(idx + variable_index_offset);
 
         /*
          * If variable points to a destructed object, replace it
@@ -3353,11 +3345,14 @@ void eval_instruction(char *p) {
             error("++ of non-numeric argument\n");
         }
         break;
-      case F_GLOBAL_LVALUE:
+      case F_GLOBAL_LVALUE: {
+        unsigned short idx = 0;
+        LOAD2(idx, pc);
         STACK_INC;
         sp->type = T_LVALUE;
-        sp->u.lvalue = find_value((READ_GLOBAL_INDEX(pc) + variable_index_offset));
+        sp->u.lvalue = find_value(idx + variable_index_offset);
         break;
+      }
       case F_INDEX_LVALUE:
         push_indexed_lvalue(0);
         break;
@@ -3696,9 +3691,7 @@ static void do_catch(char *pc, unsigned short new_pc_offset) {
    * Save some global variables that must be restored separately after a
    * longjmp. The stack will have to be manually popped all the way.
    */
-  if (!save_context(&econ)) {
-    error("Can't catch too deep recursion error.\n");
-  }
+  save_context(&econ);
   push_control_stack(FRAME_CATCH);
   csp->pc = current_prog->program + new_pc_offset;
   if (CONFIG_INT(__RC_TRACE_CODE__)) {
@@ -3709,8 +3702,8 @@ static void do_catch(char *pc, unsigned short new_pc_offset) {
 #endif
   }
 
+  assign_svalue(&catch_value, &const1);
   try {
-    assign_svalue(&catch_value, &const1);
     /* note, this will work, since csp->extern_call won't be used */
     eval_instruction(pc);
   } catch (const char *) {
@@ -3728,9 +3721,8 @@ static void do_catch(char *pc, unsigned short new_pc_offset) {
       pop_context(&econ);
       error("Can't catch eval cost too big error.\n");
     }
-    if (0 && too_deep_error) {  // can't we??
-      pop_context(&econ);
-      error("Can't catch too deep recursion error.\n");
+    if (too_deep_error) {
+      too_deep_error = 0;
     }
   }
   pop_context(&econ);
@@ -3920,14 +3912,6 @@ char *function_name(program_t *prog, int findex) {
   return prog->function_table[findex].funcname;
 }
 
-static void get_trace_details(const program_t *prog, int findex, char **fname, int *na, int *nl) {
-  function_t *cfp = &prog->function_table[findex];
-
-  *fname = cfp->funcname;
-  *na = cfp->num_arg;
-  *nl = cfp->num_local;
-}
-
 /*
  * This function is similar to apply(), except that it will not
  * call the function, only return object name if the function exists,
@@ -4084,8 +4068,7 @@ static int find_line(char *p, const program_t *progp, const char **ret_file, int
   return 0;
 }
 
-static void get_explicit_line_number_info(char *p, const program_t *progp, const char **ret_file,
-                                          int *ret_line) {
+void get_explicit_line_number_info(char *p, const program_t *progp, const char **ret_file, int *ret_line) {
   int i = find_line(p, progp, ret_file, ret_line);
 
   switch (i) {
@@ -4122,372 +4105,6 @@ char *get_line_number(char *p, const program_t *progp) {
 
   sprintf(buf, "/%s:%d", file, line);
   return buf;
-}
-
-static void dump_trace_line(const char *fname, const char *pname, const char *const obname,
-                            char *where) {
-  char line[256];
-  char *end = EndOf(line);
-  char *p;
-
-  p = strput(line, end, "Object: ");
-  if (obname[0] != '<' && p < end) {
-    *p++ = '/';
-  }
-  p = strput(p, end, obname);
-  p = strput(p, end, ", Program: ");
-  if (pname[0] != '<' && p < end) {
-    *p++ = '/';
-  }
-  p = strput(p, end, pname);
-  p = strput(p, end, "\n   in ");
-  p = strput(p, end, fname);
-  p = strput(p, end, "() at ");
-  p = strput(p, end, where);
-  p = strput(p, end, "\n");
-  debug_message(line);
-}
-
-/*
- * Write out a trace. If there is a heart_beat(), then return the
- * object that had that heart beat.
- */
-const char *dump_trace(int how) {
-  control_stack_t *p;
-  const char *ret = 0;
-  char *fname;
-  int num_arg = -1, num_local = -1;
-
-  svalue_t *ptr;
-  int i, context_saved = 0;
-  error_context_t econ;
-
-  if (current_prog == 0) {
-    return 0;
-  }
-  if (csp < &control_stack[0]) {
-    return 0;
-  }
-
-  /*
-   * save context here because svalue_to_string could generate an error
-   * which would throw us into a bad state in the error handler.  this
-   * will allow us to recover cleanly.  Don't bother if we're in a
-   * eval cost exceeded or too deep recursion state because (s)printf
-   * won't make the object_name() apply and save_context() might fail
-   * here (too deep recursion)
-   */
-  if (!save_context(&econ)) return 0;
-  try {
-    if (CONFIG_INT(__RC_TRACE_CODE__)) {
-      if (how) {
-        last_instructions();
-      }
-    }
-    debug_message("--- trace ---\n");
-    for (p = &control_stack[0]; p < csp; p++) {
-      switch (p[0].framekind & FRAME_MASK) {
-        case FRAME_FUNCTION:
-          get_trace_details(p[1].prog, p[0].fr.table_index, &fname, &num_arg, &num_local);
-          dump_trace_line(fname, p[1].prog->filename, p[1].ob->obname,
-                          get_line_number(p[1].pc, p[1].prog));
-          if (strcmp(fname, "heart_beat") == 0) {
-            ret = p->ob ? p->ob->obname : 0;
-          }
-          break;
-        case FRAME_FUNP: {
-          outbuffer_t tmpbuf;
-          svalue_t tmpval;
-
-          tmpbuf.real_size = 0;
-          tmpbuf.buffer = 0;
-
-          tmpval.type = T_FUNCTION;
-          tmpval.u.fp = p[0].fr.funp;
-
-          svalue_to_string(&tmpval, &tmpbuf, 0, 0, 0);
-
-          dump_trace_line(tmpbuf.buffer, p[1].prog->filename, p[1].ob->obname,
-                          get_line_number(p[1].pc, p[1].prog));
-
-          FREE_MSTR(tmpbuf.buffer);
-          num_arg = p[0].fr.funp->f.functional.num_arg;
-          num_local = p[0].fr.funp->f.functional.num_local;
-        } break;
-        case FRAME_FAKE:
-          dump_trace_line("<fake>", p[1].prog->filename, p[1].ob->obname,
-                          get_line_number(p[1].pc, p[1].prog));
-          num_arg = -1;
-          break;
-        case FRAME_CATCH:
-          dump_trace_line("<catch>", p[1].prog->filename, p[1].ob->obname,
-                          get_line_number(p[1].pc, p[1].prog));
-          num_arg = -1;
-          break;
-#ifdef DEBUG
-        default:
-          fatal("unknown type of frame\n");
-#endif
-      }
-      if (num_arg != -1) {
-        ptr = p[1].fp;
-        debug_message("arguments were (");
-        for (i = 0; i < num_arg; i++) {
-          outbuffer_t outbuf;
-
-          if (i) {
-            debug_message(",");
-          }
-          outbuf_zero(&outbuf);
-          svalue_to_string(&ptr[i], &outbuf, 0, 0, 0);
-          /* don't need to fix length here */
-          debug_message("%s", outbuf.buffer);
-          FREE_MSTR(outbuf.buffer);
-        }
-        debug_message(")\n");
-      }
-      if (num_local > 0 && num_arg != -1) {
-        ptr = p[1].fp + num_arg;
-        debug_message("locals were: ");
-        for (i = 0; i < num_local; i++) {
-          outbuffer_t outbuf;
-
-          if (i) {
-            debug_message(",");
-          }
-          outbuf_zero(&outbuf);
-          svalue_to_string(&ptr[i], &outbuf, 0, 0, 0);
-          /* no need to fix length */
-          debug_message("%s", outbuf.buffer);
-          FREE_MSTR(outbuf.buffer);
-        }
-        debug_message("\n");
-      }
-    }
-    switch (p[0].framekind & FRAME_MASK) {
-      case FRAME_FUNCTION:
-        get_trace_details(current_prog, p[0].fr.table_index, &fname, &num_arg, &num_local);
-        debug_message("'%15s' in '/%20s' ('/%20s') %s\n", fname, current_prog->filename,
-                      current_object->obname, get_line_number(pc, current_prog));
-        break;
-      case FRAME_FUNP: {
-        outbuffer_t tmpbuf;
-        svalue_t tmpval;
-
-        tmpbuf.real_size = 0;
-        tmpbuf.buffer = 0;
-
-        tmpval.type = T_FUNCTION;
-        tmpval.u.fp = p[0].fr.funp;
-
-        svalue_to_string(&tmpval, &tmpbuf, 0, 0, 0);
-
-        debug_message("'%s' in '/%20s' ('/%20s') %s\n", tmpbuf.buffer, current_prog->filename,
-                      current_object->obname, get_line_number(pc, current_prog));
-        FREE_MSTR(tmpbuf.buffer);
-        num_arg = p[0].fr.funp->f.functional.num_arg;
-        num_local = p[0].fr.funp->f.functional.num_local;
-      } break;
-      case FRAME_FAKE:
-        debug_message("'     <fake>' in '/%20s' ('/%20s') %s\n", current_prog->filename,
-                      current_object->obname, get_line_number(pc, current_prog));
-        num_arg = -1;
-        break;
-      case FRAME_CATCH:
-        debug_message("'          CATCH' in '/%20s' ('/%20s') %s\n", current_prog->filename,
-                      current_object->obname, get_line_number(pc, current_prog));
-        num_arg = -1;
-        break;
-    }
-    if (num_arg != -1) {
-      debug_message("arguments were (");
-      for (i = 0; i < num_arg; i++) {
-        outbuffer_t outbuf;
-
-        if (i) {
-          debug_message(",");
-        }
-        outbuf_zero(&outbuf);
-        svalue_to_string(&fp[i], &outbuf, 0, 0, 0);
-        /* no need to fix length */
-        debug_message("%s", outbuf.buffer);
-        FREE_MSTR(outbuf.buffer);
-      }
-      debug_message(")\n");
-    }
-    if (num_local > 0 && num_arg != -1) {
-      ptr = fp + num_arg;
-      debug_message("locals were: ");
-      for (i = 0; i < num_local; i++) {
-        outbuffer_t outbuf;
-
-        if (i) {
-          debug_message(",");
-        }
-        outbuf_zero(&outbuf);
-        svalue_to_string(&ptr[i], &outbuf, 0, 0, 0);
-        /* no need to fix length */
-        debug_message("%s", outbuf.buffer);
-        FREE_MSTR(outbuf.buffer);
-      }
-      debug_message("\n");
-    }
-    debug_message("--- end trace ---\n");
-  } catch (const char *) {
-    restore_context(&econ);
-    ret = 0;
-  }
-  pop_context(&econ);
-  return ret;
-}
-
-array_t *get_svalue_trace() {
-  control_stack_t *p;
-  array_t *v;
-  mapping_t *m;
-  const char *file;
-  int line;
-  char *fname;
-  int num_arg, num_local = -1;
-
-  svalue_t *ptr;
-  int i;
-
-  if (current_prog == 0) {
-    return &the_null_array;
-  }
-  if (csp < &control_stack[0]) {
-    return &the_null_array;
-  }
-  v = allocate_empty_array((csp - &control_stack[0]) + 1);
-  for (p = &control_stack[0]; p < csp; p++) {
-    m = allocate_mapping(6);
-    switch (p[0].framekind & FRAME_MASK) {
-      case FRAME_FUNCTION:
-        get_trace_details(p[1].prog, p[0].fr.table_index, &fname, &num_arg, &num_local);
-        add_mapping_string(m, "function", fname);
-        break;
-      case FRAME_CATCH:
-        add_mapping_string(m, "function", "CATCH");
-        num_arg = -1;
-        break;
-      case FRAME_FAKE:
-        add_mapping_string(m, "function", "<fake>");
-        num_arg = -1;
-        break;
-      case FRAME_FUNP: {
-        outbuffer_t tmpbuf;
-        svalue_t tmpval;
-
-        tmpbuf.real_size = 0;
-        tmpbuf.buffer = 0;
-
-        tmpval.type = T_FUNCTION;
-        tmpval.u.fp = p[0].fr.funp;
-
-        svalue_to_string(&tmpval, &tmpbuf, 0, 0, 0);
-
-        add_mapping_string(m, "function", tmpbuf.buffer);
-        FREE_MSTR(tmpbuf.buffer);
-        num_arg = p[0].fr.funp->f.functional.num_arg;
-        num_local = p[0].fr.funp->f.functional.num_local;
-      } break;
-#ifdef DEBUG
-      default:
-        fatal("unknown type of frame\n");
-#endif
-    }
-    add_mapping_malloced_string(m, "program", add_slash(p[1].prog->filename));
-    add_mapping_object(m, "object", p[1].ob);
-    get_explicit_line_number_info(p[1].pc, p[1].prog, &file, &line);
-    add_mapping_malloced_string(m, "file", add_slash(file));
-    add_mapping_pair(m, "line", line);
-    if (num_arg != -1) {
-      array_t *v2;
-
-      ptr = p[1].fp;
-      v2 = allocate_empty_array(num_arg);
-      for (i = 0; i < num_arg; i++) {
-        assign_svalue_no_free(&v2->item[i], &ptr[i]);
-      }
-      add_mapping_array(m, "arguments", v2);
-      v2->ref--;
-    }
-    if (num_local > 0 && num_arg != -1) {
-      array_t *v2;
-
-      ptr = p[1].fp + num_arg;
-      v2 = allocate_empty_array(num_local);
-      for (i = 0; i < num_local; i++) {
-        assign_svalue_no_free(&v2->item[i], &ptr[i]);
-      }
-      add_mapping_array(m, "locals", v2);
-      v2->ref--;
-    }
-    v->item[(p - &control_stack[0])].type = T_MAPPING;
-    v->item[(p - &control_stack[0])].u.map = m;
-  }
-  m = allocate_mapping(6);
-  switch (p[0].framekind & FRAME_MASK) {
-    case FRAME_FUNCTION:
-      get_trace_details(current_prog, p[0].fr.table_index, &fname, &num_arg, &num_local);
-      add_mapping_string(m, "function", fname);
-      break;
-    case FRAME_CATCH:
-      add_mapping_string(m, "function", "CATCH");
-      num_arg = -1;
-      break;
-    case FRAME_FAKE:
-      add_mapping_string(m, "function", "<fake>");
-      num_arg = -1;
-      break;
-    case FRAME_FUNP: {
-      outbuffer_t tmpbuf;
-      svalue_t tmpval;
-
-      tmpbuf.real_size = 0;
-      tmpbuf.buffer = 0;
-
-      tmpval.type = T_FUNCTION;
-      tmpval.u.fp = p[0].fr.funp;
-
-      svalue_to_string(&tmpval, &tmpbuf, 0, 0, 0);
-      add_mapping_string(m, "function", tmpbuf.buffer);
-      FREE_MSTR(tmpbuf.buffer);
-      num_arg = p[0].fr.funp->f.functional.num_arg;
-      num_local = p[0].fr.funp->f.functional.num_local;
-    } break;
-  }
-  add_mapping_malloced_string(m, "program", add_slash(current_prog->filename));
-  add_mapping_object(m, "object", current_object);
-  get_line_number_info(&file, &line);
-  add_mapping_malloced_string(m, "file", add_slash(file));
-  add_mapping_pair(m, "line", line);
-  if (num_arg != -1) {
-    array_t *v2;
-
-    v2 = allocate_empty_array(num_arg);
-    for (i = 0; i < num_arg; i++) {
-      assign_svalue_no_free(&v2->item[i], &fp[i]);
-    }
-    add_mapping_array(m, "arguments", v2);
-    v2->ref--;
-  }
-  if (num_local > 0 && num_arg != -1) {
-    array_t *v2;
-
-    v2 = allocate_empty_array(num_local);
-    for (i = 0; i < num_local; i++) {
-      assign_svalue_no_free(&v2->item[i], &fp[i + num_arg]);
-    }
-    add_mapping_array(m, "locals", v2);
-    v2->ref--;
-  }
-  v->item[(csp - &control_stack[0])].type = T_MAPPING;
-  v->item[(csp - &control_stack[0])].u.map = m;
-  /* return a reference zero array */
-  v->ref--;
-  return v;
 }
 
 char *get_line_number_if_any() {
@@ -4950,18 +4567,18 @@ static char *get_arg(int a, int b) {
 }
 
 int last_instructions() {
-  int i;
+    int i;
 
-  debug_message("Recent instruction trace:\n");
-  i = last;
-  do {
-    if (previous_instruction[i] != 0)
-      debug_message("%p: %3d %8s %-25s (%d)\n", previous_pc[i], previous_instruction[i],
-                    get_arg(i, (i + 1) % (sizeof previous_instruction / sizeof(int))),
-                    query_instr_name(previous_instruction[i]), stack_size[i] + 1);
-    i = (i + 1) % (sizeof previous_instruction / sizeof(int));
-  } while (i != last);
-  return last;
+    debug_message("Recent instruction trace:\n");
+    i = last;
+    do {
+        if (previous_instruction[i] != 0)
+            debug_message("%p: %3d %8s %-25s (%d)\n", previous_pc[i], previous_instruction[i],
+                          get_arg(i, (i + 1) % (sizeof previous_instruction / sizeof(int))),
+                          query_instr_name(previous_instruction[i]), stack_size[i] + 1);
+        i = (i + 1) % (sizeof previous_instruction / sizeof(int));
+    } while (i != last);
+    return last;
 }
 
 /* Generate a debug message to the user */
@@ -5017,21 +4634,13 @@ void mark_stack() {
 }
 #endif
 
-/* Be careful.  This assumes there will be a frame pushed right after this,
-   as we use econ->save_csp + 1 to restore */
-int save_context(error_context_t *econ) {
-  if (csp == &control_stack[CFG_MAX_CALL_DEPTH - 1]) {
-    /* Attempting to push the frame will give Too deep recursion.
-       fail now. */
-    return 0;
-  }
+void save_context(error_context_t *econ) {
   econ->save_sp = sp;
   econ->save_csp = csp;
   econ->save_cgsp = cgsp;
   econ->save_context = current_error_context;
 
   current_error_context = econ;
-  return 1;
 }
 
 void pop_context(error_context_t *econ) { current_error_context = econ->save_context; }

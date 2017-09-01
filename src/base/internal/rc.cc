@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdlib.h>  // for exit
 #include <string>
+#include <iomanip>
 
 #include "base/internal/external_port.h"
 #include "base/internal/stralloc.h"
@@ -104,6 +105,11 @@ void config_init() {
   for (i = 0; i < NUM_CONFIG_STRS; i++) {
     config_str[i] = nullptr;
   }
+
+  // populate default value for int flags.
+  for (int i = 0; i < (sizeof(kDefaultFlags) / sizeof(flagEntry)); i++) {
+    CONFIG_INT(kDefaultFlags[i].pos) = kDefaultFlags[i].defaultValue;
+  }
 }
 
 /*
@@ -172,9 +178,6 @@ bool scan_config_line(const char *fmt, void *dest, int required) {
 }  // namespace
 
 void read_config(char *filename) {
-  /* needed for string_copy() below */
-  CONFIG_INT(__MAX_STRING_LENGTH__) = 128;
-
   config_init();
 
   fprintf(stdout, "Processing config file: %s\n", filename);
@@ -347,9 +350,10 @@ void read_config(char *filename) {
     }
   }
 
+  std::cout << "==== Runtime Config Table ==== " << std::endl;
   // process int flags
   for (int i = 0; i < (sizeof(kDefaultFlags) / sizeof(flagEntry)); i++) {
-    CONFIG_INT(kDefaultFlags[i].pos) = kDefaultFlags[i].defaultValue;
+    std::cout << kDefaultFlags[i].key << ": " << kDefaultFlags[i].defaultValue;
 
     int value = 0;
     char buf[256];
@@ -358,10 +362,12 @@ void read_config(char *filename) {
     if (scan_config_line(buf, &value, kOptional)) {
       if (value != kDefaultFlags[i].defaultValue) {
         CONFIG_INT(kDefaultFlags[i].pos) = value;
-        std::cout << "* Config '" << kDefaultFlags[i].key << "' New Value: " << value << std::endl;
+        std::cout << " (new: " << value << ")";
       }
     }
+    std::cout << std::endl;
   }
+  std::cout << "==== Runtime Config Table ==== " << std::endl;
 
   // TODO: get rid of config_lines all together.
   config_lines.clear();
