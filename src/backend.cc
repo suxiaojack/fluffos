@@ -154,8 +154,8 @@ tick_event *add_walltime_event(std::chrono::milliseconds delay_msecs,
                                tick_event::callback_type callback) {
   auto event = new tick_event(callback);
   struct timeval val {
-    static_cast<time_t>(delay_msecs.count() / 1000),
-        static_cast<time_t>(delay_msecs.count() % 1000 * 1000),
+     (int)(delay_msecs.count() / 1000),
+     (int)(delay_msecs.count() % 1000 * 1000),
   };
   struct timeval *delay_ptr = nullptr;
   if (delay_msecs.count() != 0) {
@@ -322,7 +322,7 @@ void look_for_objects_to_swap() {
            */
 
           push_number(ob->flags & (O_CLONE) ? 0 : ob->prog->ref);
-          set_eval(max_cost);
+          set_eval(max_eval_cost);
           auto svp = safe_apply(APPLY_CLEAN_UP, ob, 1, ORIGIN_DRIVER);
           if (!svp || (svp->type == T_NUMBER && svp->u.number == 0)) {
             ob->flags &= ~O_WILL_CLEAN_UP;

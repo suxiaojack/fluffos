@@ -1820,7 +1820,7 @@ void dealloc_object(object_t *ob, const char *from) {
   if (ob->obname) {
     debug(d_flag, "Free object /%s\n", ob->obname);
 
-    DEBUG_CHECK1(lookup_object_hash(ob->obname) == ob,
+    DEBUG_CHECK1(ObjectTable::instance().find(ob->obname) == ob,
                  "Freeing object /%s but name still in name table", ob->obname);
     FREE((char *)ob->obname);
     SETOBNAME(ob, 0);
@@ -1912,7 +1912,7 @@ void set_nextreset(object_t *ob) {
 void reset_object(object_t *ob) {
   set_nextreset(ob);
   save_command_giver(0);
-  set_eval(max_cost);
+  set_eval(max_eval_cost);
   if (!safe_apply(APPLY_RESET, ob, 0, ORIGIN_DRIVER)) {
     /* no reset() in the object */
     ob->flags &= ~O_WILL_RESET; /* don't call it next time */
