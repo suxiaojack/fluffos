@@ -4,7 +4,8 @@
 
 /* 取代原有 find_player() */
 #ifdef NO_ADD_ACTION
-void f_find_player () {
+void f_find_player () 
+{
 	
 	int len;
 	object_t *ob;
@@ -60,6 +61,33 @@ void f_remove_input_to ()
 }
 #endif
 
+
+/* 
+  去除字串两端的空白字元
+*/
+#ifdef F_REMOVE_FRINGE_BLANKS
+void f_remove_fringe_blanks () 
+{
+	int len;
+	register unsigned char *str, *res;
+	
+	str = sp->u.string;
+
+	while( uisspace(*str) ) str++;
+	
+	len = strlen(str);
+
+	while( len && uisspace(str[len-1]) ) len--; 
+	
+	str[len]='\0';
+
+	res = new_string(len, "f_remove_fringe_blanks");
+	strncpy(res, str, len+1);
+	
+	free_string_svalue(sp);
+	put_malloced_string(res);
+}
+#endif
 
 #ifdef F_BUFTOSTR
 void f_buftostr()
