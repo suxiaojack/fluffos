@@ -1,6 +1,7 @@
 // Written by Clode@Revival World 2001/07/10
 
 #include "base/package_api.h"
+#include "packages/core/outbuf.h"
 
 /* 取代原有 find_player() */
 #ifdef NO_ADD_ACTION
@@ -16,8 +17,8 @@ void f_find_player ()
 	
 	if( len > 25 )
 	{
-        	*sp = const0;
-        	return;
+		*sp = const0;
+		return;
 	}
 	
 	path[11] = name[0];
@@ -31,9 +32,9 @@ void f_find_player ()
 
 	free_string_svalue(sp);
 	
-    	if (ob && object_visible(ob))
+	if (ob && object_visible(ob))
 		put_unrefed_undested_object(ob, "find_player");
-    	else
+	else
 		*sp = const0;
 }
 #endif
@@ -46,9 +47,10 @@ void f_remove_input_to ()
 {
     object_t *ob;
 
-    if (st_num_arg) {
-	ob = sp->u.ob;
-	pop_stack();
+    if (st_num_arg) 
+	{
+		ob = sp->u.ob;
+		pop_stack();
     }
     else ob = current_object;
     
@@ -69,9 +71,9 @@ void f_remove_input_to ()
 void f_remove_fringe_blanks () 
 {
 	int len;
-	register unsigned char *str, *res;
+	char *str, *res;
 	
-	str = sp->u.string;
+	str = (char *)sp->u.string;
 
 	while( uisspace(*str) ) str++;
 	
@@ -124,7 +126,7 @@ f_milli_clock (void)
 	time_t msec;
 	gettimeofday(&tv, &tz);
 	msec = (tv.tv_sec-boot_time)*1000+ (tv.tv_usec / 1000);
-        push_number(msec);
+	push_number(msec);
 
 }
 #endif
