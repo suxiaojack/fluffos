@@ -9,7 +9,7 @@
  ****************************************************************************/
 
 /* NOTES: Many of the configurable options are now set in the runtime config.
- * 
+ *
  * This file only contain a list of default settings, for quick diffing .
  * See detailed explaination from 'local_options.README'
  */
@@ -20,11 +20,11 @@
 /****************************************************************************
  *                              COMPAT                                      *
  ****************************************************************************/
-#undef NO_ADD_ACTION
+#define NO_ADD_ACTION
 #undef NO_SNOOP
 #undef NO_ENVIRONMENT
 #undef NO_WIZARDS
-#undef NO_LIGHT
+#define NO_LIGHT
 #define OLD_ED
 #undef ED_INDENT_CASE
 #define ED_INDENT_SPACES 4
@@ -43,7 +43,7 @@
 #define SAVE_EXTENSION ".o"
 #undef PRIVS
 #undef NO_SHADOWS
-#undef USE_ICONV
+#define USE_ICONV "GB18030"
 #undef IPV6
 #undef DTRACE
 
@@ -61,7 +61,7 @@
 #define PACKAGE_SOCKETS
 #undef PACKAGE_PARSER
 #define PACKAGE_EXTERNAL
-#undef PACKAGE_DB
+#define PACKAGE_DB
 #ifdef PACKAGE_DB
 #define USE_MYSQL 1
 #undef USE_MSQL
@@ -75,7 +75,7 @@
 #define PACKAGE_TRIM
 #define PACKAGE_PCRE
 #undef PACKAGE_DWLIB
-#define PACKAGE_UIDS
+#undef PACKAGE_UIDS
 #ifdef PACKAGE_UIDS
 #define AUTO_SETEUID
 #undef AUTO_TRUST_BACKBONE
@@ -83,6 +83,13 @@
 #define PACKAGE_COMPRESS
 #define SAVE_GZ_EXTENSION ".o.gz"
 #undef PACKAGE_THREAD
-#define PACKAGE_MATRIX
+
+#define PACKAGE_ANSI
+#define PACKAGE_ARITH_OPERATOR
+#define PACKAGE_CHINESE
+#define PACKAGE_DATABASE
+#undef PACKAGE_MAPPINGBASE
+#define PACKAGE_LONELY
+#undef PACKAGE_MG
 
 #endif /* _LOCAL_OPTIONS_H_ */
