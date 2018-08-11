@@ -29,7 +29,7 @@
 #undef ED_INDENT_CASE
 #define ED_INDENT_SPACES 4
 #undef ED_USE_TABS
-#define ED_TAB_WIDTH 8
+#define ED_TAB_WIDTH 4
 #undef RECEIVE_ED
 #define RESTRICTED_ED
 #define SENSIBLE_MODIFIERS
@@ -43,7 +43,7 @@
 #define SAVE_EXTENSION ".o"
 #undef PRIVS
 #undef NO_SHADOWS
-#define USE_ICONV "GB18030"
+#define USE_ICONV "GBK"
 #undef IPV6
 #undef DTRACE
 
