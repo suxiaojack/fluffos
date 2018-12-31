@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+    <title>FluffOS - {{ page.title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href={{ "/css/default.css" | relative_url }}>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-2912700-7"></script>
+	<script>
+		  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-2912700-7');
+	</script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-4 col-sm-4 col-lg-3 text-right">
+          <a href="/"><h1>FluffOS</h1></a>
+        </div>
+        <div class="col-8 col-sm-8 col-lg-8" style="margin-top: 15px"> <gcse:searchbox-only></gcse:searchbox-only> </div>
+      </div>
+      <div class="row">
+        <div class="col-4 col-sm-4 col-lg-3">
+          <div id="pages">
+            <ol>
+              <li>Start Here
+                <ol>
+                  <li><a href="/">Welcome</a></li>
+                  <li><a href="/build.html">Build Driver</a></li>
+                  <li><a href="/bug.html">Bug Report</a></li>
+                </ol>
+              </li>
+              <li>Documentation
+                <ol>
+                  <li><a href="/lpc">LPC Language</a></li>
+                  <li><a href="/concepts">Concepts</a></li>
+                  <li><a href="/driver">Driver</a></li>
+                  <li><a href="/apply">Apply</a></li>
+                  <li><a href="/efun">EFUN</a></li>
+                </ol>
+              </li>
+              <li>Packages
+                <!--
+                  <ol>
+                  <li><a href="#"></a></li>
+                  </ol>
+                -->
+              </li>
+              <li>Development
+                <ol>
+                  <li><a href="https://github.com/fluffos/fluffos">GitHub Repo</a></li>
+                  <li><a href="https://travis-ci.org/fluffos/fluffos">Travis CI</a></li>
+                  <li><a href="https://coveralls.io/github/fluffos/fluffos">Coverage</a></li>
+                  <li><a href="https://scan.coverity.com/projects/483?tab=Overview">Coverity Scan</a></li>
+                </ol>
+
+              </li>
+
+              <li>Contact
+                <ol>
+                  <li><a href="https://forum.fluffos.info">Forum</a></li>
+                </ol>
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="col-8 col-sm-8 col-lg-8">
+		<h2>{{ page.title }}</h2>
+		<h3><a href="{{ site.github.repository_url }}/tree/master/docs/{{ page.path }}">Edit on Github</a></h3>
+          <div id="content">
+            {{ content }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GCE -->
+    <script>
+(function() {
+  var cx = '015880077353261870029:ujn3ynk194o';
+  var gcse = document.createElement('script');
+  gcse.type = 'text/javascript';
+  gcse.async = true;
+  gcse.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') +
+    '//www.google.com/cse/cse.js?cx=' + cx;
+  var s = document.getElementsByTagName('script')[0];
+  s.parentNode.insertBefore(gcse, s);
+})();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+  </body>
+</html>

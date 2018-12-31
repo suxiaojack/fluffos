@@ -1,0 +1,10 @@
+---
+layout: default
+title: contrib / get_garbage.pre
+---
+
+object \*get_garbage();
+
+returns array of all (up to **MAX_ARRAY_SIZE**) those cloned(!) objects which
+have neither environment nor inventory and aren't shadowing another object
+and haven't object->super set
